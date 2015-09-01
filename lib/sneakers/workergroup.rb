@@ -36,15 +36,14 @@ module Sneakers
         # report aggregated stats?
       end
 
+      @workers.each do |worker|
+        worker.stop
+      end
     end
 
     def stop
       Sneakers.logger.info("Shutting down workers")
-      @workers.each do |worker|
-        worker.stop
-      end
       @stop_flag.set!
     end
-
   end
 end
