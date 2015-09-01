@@ -1,5 +1,4 @@
 
-class Sneakers::Queue
   attr_reader :name, :opts, :exchange
 
   def initialize(name, opts)
@@ -22,7 +21,7 @@ class Sneakers::Queue
     @bunny ||= create_bunny_connection
     @bunny.start
 
-    @channel = @bunny.create_channel
+    @channel = @bunny.create_channel(nil, @opts[:threads])
     @channel.prefetch(@opts[:prefetch])
 
     exchange_name = @opts[:exchange]

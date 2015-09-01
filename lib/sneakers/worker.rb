@@ -18,7 +18,6 @@ module Sneakers
 
       @should_ack =  opts[:ack]
       @timeout_after = opts[:timeout_job_after]
-      @pool = pool || Thread.pool(opts[:threads]) # XXX config threads
       @call_with_params = respond_to?(:work_with_params)
 
       @queue = queue || Sneakers::Queue.new(
@@ -44,57 +43,54 @@ module Sneakers
     def do_work(delivery_info, metadata, msg, handler)
       worker_trace "Working off: #{msg}"
 
-      @pool.process do
-        res = nil
-        error = nil
+      res = nil
+      error = nil
 
-        begin
-          metrics.increment("work.#{self.class.name}.started")
-          Timeout.timeout(@timeout_after, Timeout::Error) do
-            metrics.timing("work.#{self.class.name}.time") do
-              if @call_with_params
-                res = work_with_params(msg, delivery_info, metadata)
-              else
-                res = work(msg)
-              end
+      begin
+        metrics.increment("work.#{self.class.name}.started")
+        Timeout.timeout(@timeout_after, Timeout::Error) do
+          metrics.timing("work.#{self.class.name}.time") do
+            if @call_with_params
+              res = work_with_params(msg, delivery_info, metadata)
+            else
+              res = work(msg)
             end
           end
-        rescue Timeout::Error
-          res = :timeout
-          worker_error('timeout')
-        rescue => ex
-          res = :error
-          error = ex
-          worker_error('unexpected error', ex)
         end
+      rescue Timeout::Error
+        res = :timeout
+        worker_error('timeout')
+      rescue => ex
+        res = :error
+        error = ex
+        worker_error('unexpected error', ex)
+      end
 
-        if @should_ack
+      if @should_ack
 
-          if res == :ack
-            # note to future-self. never acknowledge multiple (multiple=true) messages under threads.
-            handler.acknowledge(delivery_info, metadata, msg)
-          elsif res == :timeout
-            handler.timeout(delivery_info, metadata, msg)
-          elsif res == :error
-            handler.error(delivery_info, metadata, msg, error)
-          elsif res == :reject
-            handler.reject(delivery_info, metadata, msg)
-          elsif res == :requeue
-            handler.reject(delivery_info, metadata, msg, true)
-          else
-            handler.noop(delivery_info, metadata, msg)
-          end
-          metrics.increment("work.#{self.class.name}.handled.#{res || 'noop'}")
+        if res == :ack
+          # note to future-self. never acknowledge multiple (multiple=true) messages under threads.
+          handler.acknowledge(delivery_info, metadata, msg)
+        elsif res == :timeout
+          handler.timeout(delivery_info, metadata, msg)
+        elsif res == :error
+          handler.error(delivery_info, metadata, msg, error)
+        elsif res == :reject
+          handler.reject(delivery_info, metadata, msg)
+        elsif res == :requeue
+          handler.reject(delivery_info, metadata, msg, true)
+        else
+          handler.noop(delivery_info, metadata, msg)
         end
+        metrics.increment("work.#{self.class.name}.handled.#{res || 'noop'}")
+      end
 
-        metrics.increment("work.#{self.class.name}.ended")
-      end #process
+      metrics.increment("work.#{self.class.name}.ended")
     end
 
     def stop
       worker_trace "Stopping worker: unsubscribing."
       @queue.unsubscribe
-      @pool.shutdown
       worker_trace "Stopping worker: I'm gone."
     end
 
