@@ -72,9 +72,9 @@ module Sneakers
       # file and sometimes an object.
       serverengine_config =  Sneakers::CONFIG.merge(@conf)
       serverengine_config.merge!(
-        :logger => Sneakers.logger,
         :worker_type => 'process',
         :worker_classes => @worker_classes,
+        :log => "-",
 
         # Turning off serverengine internal logging infra, causes
         # livelock and hang.
@@ -82,11 +82,7 @@ module Sneakers
         :log_stdout => false,
         :log_stderr => false
       )
-      if @conf[:log] == "-" || @conf[:log] == nil
-        serverengine_config.delete(:logger) # o/w it will attempt to reopen STDERR / STDOUT which will livelock
-      else
-        serverengine_config.delete(:log)
-      end
+      serverengine_config.delete(:logger) # o/w it will attempt to reopen STDERR / STDOUT which will livelock
 
       serverengine_config
     end
