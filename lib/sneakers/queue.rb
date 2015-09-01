@@ -1,4 +1,5 @@
 
+class Sneakers::Queue
   attr_reader :name, :opts, :exchange
 
   def initialize(name, opts)
