@@ -88,7 +88,7 @@ module Sneakers
   end
 
   def setup_worker_concerns!
-    Worker.configure_logger(Sneakers::logger)
+    Worker.configure_logger(nil)
     Worker.configure_metrics(CONFIG[:metrics])
     CONFIG[:handler] ||= Sneakers::Handlers::Oneshot
   end

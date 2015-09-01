@@ -61,6 +61,8 @@ class Sneakers::Queue
 
   def unsubscribe
     # XXX can we cancel bunny and channel too?
+    @bunny.stop # TODO: note that this bunny instance might be shared...
+    @channel.close
     @consumer.cancel if @consumer
     @consumer = nil
   end
