@@ -82,7 +82,11 @@ module Sneakers
         :log_stdout => false,
         :log_stderr => false
       )
-      serverengine_config.delete(:log)
+      if @conf[:log] == "-" || @conf[:log] == nil
+        serverengine_config.delete(:logger) # o/w it will attempt to reopen STDERR / STDOUT which will livelock
+      else
+        serverengine_config.delete(:log)
+      end
 
       serverengine_config
     end
