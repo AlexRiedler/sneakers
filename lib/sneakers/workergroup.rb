@@ -32,13 +32,17 @@ module Sneakers
       # end per worker
       #
       until @stop_flag.wait_for_set(Sneakers::CONFIG[:amqp_heartbeat])
+        Logger.new(STDERR).warn("WTF MATE?")
         Sneakers.logger.debug("Heartbeat: running threads [#{Thread.list.count}]")
         # report aggregated stats?
       end
 
+      Logger.new(STDERR).warn("STOPPING WORKERS.")
       @workers.each do |worker|
         worker.stop
+        Logger.new(STDERR).warn("ONE STOPPED.")
       end
+      Logger.new(STDERR).warn("FINISHED!")
     end
 
     def stop

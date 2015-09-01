@@ -10,9 +10,12 @@ module Sneakers
     def run
       @se = ServerEngine.create(nil, WorkerGroup) { @runnerconfig.reload_config! }
       @se.run
+      Logger.new(STDERR).warn("MAIN RUN EXITED")
+      sleep 10
     end
 
     def stop
+      Logger.new(STDERR).warn("RUNNER STOP RAN")
       @se.stop
     end
   end
