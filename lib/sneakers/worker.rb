@@ -18,7 +18,15 @@ module Sneakers
 
       @should_ack =  opts[:ack]
       @timeout_after = opts[:timeout_job_after]
-      @pool = pool || Thread.pool(opts[:threads]) # XXX config threads
+      @pool =
+        if pool
+          @pool_creator = true
+          @pool = pool
+        else
+          @pool_creator = false
+          @pool = Thread.pool(opts[:threads])
+        end
+
       @call_with_params = respond_to?(:work_with_params)
 
       @queue = queue || Sneakers::Queue.new(
@@ -94,6 +102,7 @@ module Sneakers
     def stop
       worker_trace "Stopping worker: unsubscribing."
       @queue.unsubscribe
+      @pool.shutdown
       worker_trace "Stopping worker: I'm gone."
     end
 

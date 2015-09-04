@@ -60,9 +60,16 @@ class Sneakers::Queue
   end
 
   def unsubscribe
-    # XXX can we cancel bunny and channel too?
     @consumer.cancel if @consumer
     @consumer = nil
+    @channel.close if @channel rescue Bunny::ChannelAlreadyClosed
+    @channel = nil
+    begin
+      @bunny.close if !@opts[:connection] && @bunny # we are the owner
+    rescue Bunny::Exception
+      # we are unsubscribing, if the connection is failed or similar just leave it.
+    end
+    @bunny = nil
   end
 
   def create_bunny_connection
